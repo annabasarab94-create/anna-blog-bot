@@ -1,0 +1,268 @@
+import os
+import json
+import asyncio
+from dotenv import load_dotenv
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
+import gspread
+from google.oauth2.service_account import Credentials
+
+load_dotenv()
+
+# === КОНФИГ ===
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
+GOOGLE_CREDENTIALS_JSON = os.getenv('GOOGLE_CREDENTIALS_JSON')
+
+# === GOOGLE SHEETS ===
+creds = Credentials.from_service_account_info(
+    json.loads(GOOGLE_CREDENTIALS_JSON),
+    scopes=['https://www.googleapis.com/auth/spreadsheets']
+)
+gc = gspread.authorize(creds)
+worksheet = gc.open_by_key(GOOGLE_SHEET_ID).sheet1
+
+# === ВОПРОСЫ И ВАРИАНТЫ ===
+QUESTIONS = {
+    1: {
+        "text": "Есть ли у вашего блога четкая стратегия — т.е. вы знаете, какие темы вы будете раскрывать в ближайшие 2-3 месяца, или вы выбираете темы по вдохновению?",
+        "zone": "Стратегия",
+        "answers": {
+            "yes": {"text": "Знаю темы на несколько месяцев вперёд", "score": 2},
+            "partially": {"text": "Частично спланировано, частично по вдохновению", "score": 1},
+            "no": {"text": "Выбираю темы, как получится", "score": 0}
+        }
+    },
+    2: {
+        "text": "Кто принимает решение о том, что постить — вы сами или кто-то, кому вы это делегировали?",
+        "zone": "Стратегия",
+        "answers": {
+            "yes": {"text": "Делегировал всё, включая выбор тем и решение о публикации", "score": 2},
+            "partially": {"text": "Делегировал исполнение, но я выбираю темы и утверждаю", "score": 1},
+            "no": {"text": "Я принимаю все решения сам", "score": 0}
+        }
+    },
+    3: {
+        "text": "Если у вас есть человек, который работает с блогом (SMM, помощник, агентство), то он работает по:",
+        "zone": "Делегирование",
+        "answers": {
+            "yes": {"text": "Чёткому плану и системе, я не трачу время на объяснения", "score": 2},
+            "partially": {"text": "Он делает то, что я ему скажу, но идеи ещё выходят из моей головы", "score": 1},
+            "no": {"text": "У меня нет делегирования или я всё равно управляю каждым решением", "score": 0}
+        }
+    },
+    4: {
+        "text": "Насколько часто вы объясняете подрядчику / помощнику, почему нужно сделать именно это?",
+        "zone": "Делегирование",
+        "answers": {
+            "yes": {"text": "Не объясняю, он знает систему", "score": 2},
+            "partially": {"text": "Объясняю иногда, когда что-то особенное", "score": 1},
+            "no": {"text": "Объясняю часто, потому что без этого не понимает", "score": 0}
+        }
+    },
+    5: {
+        "text": "Когда вы выкладываете контент, вы знаете, чего ожидать от этого поста (охват, результат, для кого он)?",
+        "zone": "Качество контента",
+        "answers": {
+            "yes": {"text": "Всегда знаю, для кого и зачем", "score": 2},
+            "partially": {"text": "Знаю только в общих чертах", "score": 1},
+            "no": {"text": "Постю и вижу, что получится", "score": 0}
+        }
+    },
+    6: {
+        "text": "Если один рилс набрал много просмотров, а другой провалился, вы понимаете, почему произошло именно так?",
+        "zone": "Качество контента",
+        "answers": {
+            "yes": {"text": "Анализирую и вижу закономерность", "score": 2},
+            "partially": {"text": "Иногда получается разобраться", "score": 1},
+            "no": {"text": "Не знаю, в чём разница", "score": 0}
+        }
+    },
+    7: {
+        "text": "Вы можете чётко описать, для кого ваш блог, какая у них главная боль и как вы её решаете?",
+        "zone": "Аудитория и позиционирование",
+        "answers": {
+            "yes": {"text": "Могу описать подробно, это мой фокус", "score": 2},
+            "partially": {"text": "Примерно знаю, но не всегда ясно", "score": 1},
+            "no": {"text": "Не задумывался об этом", "score": 0}
+        }
+    },
+    8: {
+        "text": "Как вас видит ваша аудитория — что вы для неё?",
+        "zone": "Аудитория и позиционирование",
+        "answers": {
+            "yes": {"text": "Я позиционирую себя чётко, аудитория это понимает", "score": 2},
+            "partially": {"text": "Есть представление, но может быть размытым", "score": 1},
+            "no": {"text": "Не уверен, как я выглядю со стороны", "score": 0}
+        }
+    },
+    9: {
+        "text": "Если вам нужно отчитаться о блоге, вы смотрите на:",
+        "zone": "Метрики и управление",
+        "answers": {
+            "yes": {"text": "Качество лидов и продажи из блога", "score": 2},
+            "partially": {"text": "Просмотры и охваты", "score": 1},
+            "no": {"text": "Честно, не отслеживаю ничего", "score": 0}
+        }
+    },
+    10: {
+        "text": "Блог для вас сейчас:",
+        "zone": "Метрики и управление",
+        "answers": {
+            "yes": {"text": "Работающая система, которая приносит результаты", "score": 2},
+            "partially": {"text": "Постоянная фоновая задача, которая не закрывается", "score": 1},
+            "no": {"text": "Обуза, которая давит", "score": 0}
+        }
+    }
+}
+
+# === РЕЗУЛЬТАТЫ ===
+RESULTS = {
+    (0, 5): {
+        "title": "Блог на автопилоте — или его нет вообще",
+        "description": "Вот что я вижу: у вас есть блог (может быть), но это не система. Это периодические посты, которые откладываются, непонятно кому идут, и результаты непредсказуемы. Стратегии нет. Делегирования нет. Анализа нет.\n\nЭто ровно то, что можно переделать в первую очередь — не добавлять контент, а сделать систему, которая работает без вашего постоянного управления.",
+        "cta": "Хотите разобраться, как это переделать? Давайте обсудим, с чего начать."
+    },
+    (6, 11): {
+        "title": "Блог существует, но всё ещё держится на вас",
+        "description": "Вы понимаете, что блог нужен, и пытаетесь как-то его вести. Может быть, есть помощник, может быть, есть план. Но вот беда: всё ещё крутится вокруг вас. Вы выбираете темы, вы объясняете, что делать, вы смотрите результаты.\n\nИначе говоря, вы не делегировали продвижение — вы делегировали исполнение. Это съедает энергию и не масштабируется.",
+        "cta": "Можно это переделать — сделать так, чтобы блог развивался системно, без вашего ежедневного управления. Проверим, как?"
+    },
+    (12, 15): {
+        "title": "У вас уже есть система — нужно её отточить",
+        "description": "Хорошо: стратегия есть, вы понимаете аудиторию, делегирование частично работает. Но вот тонкая точка: вы не всегда видите закономерности в результатах. Почему один рилс зашёл, другой нет? Что работает, а что нет?\n\nБез аналитики и регулярного разбора система становится случайной. Нужна не перестройка, а настройка.",
+        "cta": "Давайте посмотрим, как вы можете усилить то, что уже работает."
+    },
+    (16, 19): {
+        "title": "Блог работает, остались мелкие детали",
+        "description": "Вы знаете, что вы делаете, для кого и зачем. Система работает. Делегирование на месте. Результаты вам понятны. Это хороший уровень.\n\nОсталось только убедиться, что вы не теряете какой-то важный момент — может быть, не все возможности используются, может быть, есть место для роста, которое вы не видите со стороны.",
+        "cta": "Если интересно взглянуть на блог со стороны и найти ещё что-то, что может вырасти — давайте обсудим."
+    },
+    (20, 20): {
+        "title": "Вы знаете свой блог лучше, чем кто-либо",
+        "description": "Если честно — если у вас 20 баллов, то вам не нужна моя помощь с базовой стратегией. Но вот что может быть интересным: масштабирование, запуск новых форматов, работа на несколько платформ одновременно, или просто экономия времени через полное делегирование управления.",
+        "cta": "Если есть смысл обсудить более сложные задачи — я тут."
+    }
+}
+
+# === КЛАВИАТУРЫ ===
+def get_answer_keyboard(question_num):
+    question = QUESTIONS[question_num]
+    buttons = []
+    for key, answer_data in question["answers"].items():
+        buttons.append(
+            InlineKeyboardButton(
+                text=answer_data["text"],
+                callback_data=f"answer_{question_num}_{key}"
+            )
+        )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[btn] for btn in buttons])
+    return keyboard
+
+# === ИНИЦИАЛИЗАЦИЯ ===
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
+
+# === ОБРАБОТЧИКИ ===
+user_answers = {}
+
+@dp.message(Command("start"))
+async def start(message: types.Message):
+    user_id = message.from_user.id
+    user_answers[user_id] = {"scores": [], "current_question": 1}
+    
+    await message.answer(
+        "👋 Привет! Я помогу вам разобраться с блогом.\n\n"
+        "Вот короткий тест — 10 вопросов, в конце вы узнаете, что именно не так.\n\n"
+        "Поехали?",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text="Начать тест", callback_data="start_test")
+            ]]
+        )
+    )
+
+@dp.callback_query(lambda c: c.data == "start_test")
+async def start_test(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    user_answers[user_id] = {"scores": [], "current_question": 1}
+    
+    question_num = 1
+    question_data = QUESTIONS[question_num]
+    
+    await callback.message.edit_text(
+        f"Вопрос {question_num}/10\n\n{question_data['text']}",
+        reply_markup=get_answer_keyboard(question_num)
+    )
+    await callback.answer()
+
+@dp.callback_query(lambda c: c.data.startswith("answer_"))
+async def answer_question(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    data_parts = callback.data.split("_")
+    question_num = int(data_parts[1])
+    answer_key = data_parts[2]
+    
+    score = QUESTIONS[question_num]["answers"][answer_key]["score"]
+    user_answers[user_id]["scores"].append(score)
+    
+    next_question_num = question_num + 1
+    
+    if next_question_num <= 10:
+        question_data = QUESTIONS[next_question_num]
+        await callback.message.edit_text(
+            f"Вопрос {next_question_num}/10\n\n{question_data['text']}",
+            reply_markup=get_answer_keyboard(next_question_num)
+        )
+    else:
+        # Показываем результат
+        total_score = sum(user_answers[user_id]["scores"])
+        
+        # Определяем результат
+        result_key = None
+        for range_tuple, result_data in RESULTS.items():
+            if range_tuple[0] <= total_score <= range_tuple[1]:
+                result_key = range_tuple
+                break
+        
+        result_data = RESULTS[result_key]
+        
+        result_text = f"📊 Ваш результат: {total_score}/20\n\n" \
+                      f"<b>{result_data['title']}</b>\n\n" \
+                      f"{result_data['description']}\n\n" \
+                      f"<b>Что дальше?</b>\n{result_data['cta']}"
+        
+        # Сохраняем в Google Sheets
+        try:
+            user_name = callback.from_user.first_name or "Unknown"
+            user_username = callback.from_user.username or "No username"
+            worksheet.append_row([
+                user_id,
+                user_name,
+                user_username,
+                total_score,
+                result_data['title'],
+                "pending"
+            ])
+        except Exception as e:
+            print(f"Error saving to sheet: {e}")
+        
+        await callback.message.edit_text(
+            result_text,
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    InlineKeyboardButton(text="Написать в Telegram", url="https://t.me/basarab_ani")
+                ]]
+            )
+        )
+    
+    await callback.answer()
+
+# === ЗАПУСК ===
+async def main():
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
