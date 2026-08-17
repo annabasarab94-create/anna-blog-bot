@@ -2,3 +2,4 @@ aiogram
 gspread
 google-auth-oauthlib
 python-dotenv
+aiohttp
