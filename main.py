@@ -82,7 +82,7 @@ async def start(message: types.Message):
 @dp.message(Command("test"))
 async def test(message: types.Message):
     user_id = message.from_user.id
-    user_state[user_id] = {"scores": [], "q": 0}
+    user_state[user_id] = {"scores": [], "q": 0, "started": False}
     
     # Приветственное сообщение
     welcome_text = """Привет! Вопрос: блог съедает вашу энергию или приносит деньги?
@@ -91,21 +91,41 @@ async def test(message: types.Message):
 
 За 10 вопросов я покажу, что именно не так. Может быть, нет стратегии. Может быть, вы управляете всем сами. Может быть, нет анализа.
 
-В конце — рекомендация, с чего начать.
+В конце — рекомендация, с чего начать."""
+    
+    # Кнопки с яркими эмодзи
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="👍 Да", callback_data="start_yes")],
+        [InlineKeyboardButton(text="✅ Конечно", callback_data="start_yes")],
+        [InlineKeyboardButton(text="🚀 Поехали", callback_data="start_yes")],
+    ])
+    
+    await message.answer(welcome_text, reply_markup=keyboard)
 
-Начнём?"""
+@dp.callback_query(lambda c: c.data.startswith("start_"))
+async def start_questions(callback):
+    user_id = callback.from_user.id
     
-    await message.answer(welcome_text)
+    if user_id not in user_state:
+        await callback.answer("Начни тест: /test")
+        return
     
-    # Первый вопрос
+    user_state[user_id]["started"] = True
+    
+    # Удаляем приветственное сообщение
+    await callback.message.delete()
+    
+    # Отправляем первый вопрос
     question, answers = QUESTIONS[0]
     buttons = [[InlineKeyboardButton(text=ans, callback_data=f"q0_{ans}")] for ans in answers.keys()]
     
-    await message.answer(
+    await callback.message.answer(
         f"<b>Вопрос 1/10</b>\n\n{question}",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
         parse_mode="HTML"
     )
+    
+    await callback.answer()
 
 @dp.callback_query(lambda c: c.data.startswith("q"))
 async def answer(callback):
@@ -158,7 +178,7 @@ async def answer(callback):
         
         # Кнопка deep link с предзаполненным сообщением
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="Написать диагностику", url="https://t.me/basarab_ani?text=диагностика")
+            InlineKeyboardButton(text="📞 Написать диагностику", url="https://t.me/basarab_ani?text=диагностика")
         ]])
         
         if worksheet:
