@@ -4,3 +4,5 @@ google-auth==2.27.0
 google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
 python-dotenv==1.0.0
+pydantic==2.7.0
+pydantic-core==2.18.0
