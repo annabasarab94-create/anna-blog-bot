@@ -84,9 +84,117 @@ async def test(message: types.Message):
     user_id = message.from_user.id
     user_state[user_id] = {"scores": [], "q": 0}
     
+    # Приветственное сообщение
+    welcome_text = """Привет! Вопрос: блог съедает вашу энергию или приносит деньги?
+
+Если первое — этот тест для вас.
+
+За 10 вопросов я покажу, что именно не так. Может быть, нет стратегии. Может быть, вы управляете всем сами. Может быть, нет анализа.
+
+В конце — рекомендация, с чего начать.
+
+Начнём?"""
+    
+    await message.answer(welcome_text)
+    
+    # Первый вопрос
     question, answers = QUESTIONS[0]
     buttons = [[InlineKeyboardButton(text=ans, callback_data=f"q0_{ans}")] for ans in answers.keys()]
     
     await message.answer(
         f"<b>Вопрос 1/10</b>\n\n{question}",
-        reply_markup=InlineKeyboardMarkup(i
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        parse_mode="HTML"
+    )
+
+@dp.callback_query(lambda c: c.data.startswith("q"))
+async def answer(callback):
+    user_id = callback.from_user.id
+    
+    if user_id not in user_state:
+        await callback.answer("Начни тест: /test")
+        return
+    
+    parts = callback.data.split("_", 1)
+    q_num = int(parts[0][1:])
+    answer_text = parts[1]
+    
+    # Блокируем изменение ответов на предыдущие вопросы
+    if q_num < len(user_state[user_id]["scores"]):
+        await callback.answer("Ответ уже принят, менять нельзя")
+        return
+    
+    question, answers = QUESTIONS[q_num]
+    score = answers[answer_text]
+    user_state[user_id]["scores"].append(score)
+    
+    # Редактируем старое сообщение — показываем ответ без кнопок
+    await callback.message.edit_text(
+        f"<b>Вопрос {q_num + 1}/10</b>\n\n{question}\n\n✓ Ответ: {answer_text}",
+        parse_mode="HTML",
+        reply_markup=None
+    )
+    
+    if q_num + 1 < len(QUESTIONS):
+        next_q = q_num + 1
+        next_question, next_answers = QUESTIONS[next_q]
+        buttons = [[InlineKeyboardButton(text=ans, callback_data=f"q{next_q}_{ans}")] for ans in next_answers.keys()]
+        
+        await callback.message.answer(
+            f"<b>Вопрос {next_q + 1}/10</b>\n\n{next_question}",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+            parse_mode="HTML"
+        )
+    else:
+        total = sum(user_state[user_id]["scores"])
+        result = None
+        
+        for (min_s, max_s), r in RESULTS.items():
+            if min_s <= total <= max_s:
+                result = r
+                break
+        
+        result_text = f"📊 <b>Ваш результат: {total}/20</b>\n\n<b>{result['title']}</b>\n\n{result['text']}\n\n<b>Что дальше?</b>\nНапишите мне слово <b>диагностика</b> @basarab_ani"
+        
+        # Кнопка deep link с предзаполненным сообщением
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text="Написать диагностику", url="https://t.me/basarab_ani?text=диагностика")
+        ]])
+        
+        if worksheet:
+            try:
+                user_name = callback.from_user.first_name or "User"
+                user_username = callback.from_user.username or "No username"
+                worksheet.append_row([
+                    user_id,
+                    user_name,
+                    user_username,
+                    total,
+                    result['title'],
+                    "pending"
+                ])
+            except:
+                pass
+        
+        await callback.message.answer(
+            result_text,
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+    
+    await callback.answer()
+
+async def health_check(request):
+    return web.Response(text="OK")
+
+async def main():
+    app = web.Application()
+    app.router.add_get('/', health_check)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 8000)
+    await site.start()
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
