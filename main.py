@@ -53,7 +53,7 @@ async def start(message: types.Message):
 @dp.message(Command("test"))
 async def test(message: types.Message):
     user_id = message.from_user.id
-    user_state[user_id] = {"scores": [], "q": 0}
+    user_state[user_id] = {"scores": [], "q": 0, "answers": []}
     txt = "Насколько ваш блог действительно работает на вас?\n\nЗа 8 вопросов вы поймёте результат и где теряются клиенты.\n\nПриступим?"
     kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👍 Да!", callback_data="start"), InlineKeyboardButton(text="🚀 Поехали!", callback_data="start")]])
     await message.answer(txt, reply_markup=kb)
@@ -65,12 +65,12 @@ async def start_test(callback):
         return
     q = QUESTIONS[0]
     ans_list = list(q["answers"].keys())
-    txt = "Вопрос 1/8\n\n" + q["text"] + "\n\n"
+    txt = "<b>Вопрос 1/8</b>\n\n<b>" + q["text"] + "</b>\n\n"
     for i, a in enumerate(ans_list):
-        txt += str(i+1) + ". " + a + "\n\n"
+        txt += str(i+1) + "️⃣ " + a + "\n\n"
     buttons = [[InlineKeyboardButton(text=str(i+1)+"️⃣", callback_data=f"a0_{i}")] for i in range(len(ans_list))]
     kb = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await callback.message.answer(txt, reply_markup=kb)
+    await callback.message.answer(txt, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
 
 @dp.callback_query(lambda c: c.data.startswith("a"))
@@ -88,16 +88,17 @@ async def answer(callback):
     ans_items = list(q["answers"].items())
     ans_text, score = ans_items[ans_idx]
     user_state[user_id]["scores"].append(score)
-    await callback.message.edit_text("Вопрос "+str(q_num+1)+"/8\n\n"+q["text"]+"\n\n✓", reply_markup=None)
+    user_state[user_id]["answers"].append(ans_text)
+    await callback.message.edit_text("<b>Вопрос "+str(q_num+1)+"/8</b>\n\n<b>"+q["text"]+"</b>\n\n✓ Ваш ответ: "+ans_text, reply_markup=None, parse_mode="HTML")
     if q_num + 1 < 8:
         nq = QUESTIONS[q_num+1]
         ans_list = list(nq["answers"].keys())
-        txt = "Вопрос "+str(q_num+2)+"/8\n\n" + nq["text"] + "\n\n"
+        txt = "<b>Вопрос "+str(q_num+2)+"/8</b>\n\n<b>" + nq["text"] + "</b>\n\n"
         for i, a in enumerate(ans_list):
-            txt += str(i+1) + ". " + a + "\n\n"
+            txt += str(i+1) + "️⃣ " + a + "\n\n"
         buttons = [[InlineKeyboardButton(text=str(i+1)+"️⃣", callback_data=f"a{q_num+1}_{i}")] for i in range(len(ans_list))]
         kb = InlineKeyboardMarkup(inline_keyboard=buttons)
-        await callback.message.answer(txt, reply_markup=kb)
+        await callback.message.answer(txt, reply_markup=kb, parse_mode="HTML")
     else:
         total = sum(user_state[user_id]["scores"])
         q1, q5, q6, q8 = user_state[user_id]["scores"][0], user_state[user_id]["scores"][4], user_state[user_id]["scores"][5], user_state[user_id]["scores"][7]
@@ -109,9 +110,9 @@ async def answer(callback):
             res = RESULTS[3]
         else:
             res = RESULTS[4]
-        txt = res["title"] + "\n\n" + res["text"]
+        txt = "<b>" + res["title"] + "</b>\n\n" + res["text"]
         kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Написать диагностику", url="https://t.me/anya_basarab?text=ДИАГНОСТИКА")]])
-        await callback.message.answer(txt, reply_markup=kb)
+        await callback.message.answer(txt, reply_markup=kb, parse_mode="HTML")
         if worksheet:
             try:
                 worksheet.append_row([callback.from_user.id, callback.from_user.first_name or "User", total, res["title"]])
