@@ -42,6 +42,8 @@ RESULTS = {
     4: {"title": "😵‍💫 Блог забирает больше, чем даёт", "text": "Сейчас блог, скорее всего, ощущается как ещё одна работа поверх основной работы.\n\nНужно придумать тему, снять, написать, выложить, не пропасть из сторис, посмотреть охваты. И всё это постоянно висит в голове. При этом клиентов из блога либо мало, либо они приходят настолько нестабильно, что сложно понять, зачем вы вообще тратите на это столько сил.\n\n✨ Это можно изменить. Блог можно выстроить так, чтобы вы понимали, что публиковать, зачем это делать и как контент должен приводить к заявкам, а не просто занимать ещё несколько часов вашей недели.\n\nНапишите мне ДИАГНОСТИКА @anya_basarab"}
 }
 
+EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 user_state = {}
@@ -66,11 +68,15 @@ async def start_test(callback):
         return
     
     q = QUESTIONS[0]
-    buttons = []
-    for idx, ans in enumerate(q["answers"].keys()):
-        buttons.append([InlineKeyboardButton(text=ans, callback_data=f"a0_{idx}")])
-    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await callback.message.answer(f"<b>Вопрос 1/8</b>\n\n{q['text']}", reply_markup=kb, parse_mode="HTML")
+    answers_list = list(q["answers"].keys())
+    
+    question_text = f"<b>Вопрос 1/8</b>\n\n{q['text']}\n\n"
+    for idx, ans in enumerate(answers_list):
+        question_text += f"{idx + 1}. {ans}\n\n"
+    
+    buttons = [[InlineKeyboardButton(text=EMOJIS[idx], callback_data=f"a0_{idx}")] for idx in range(len(answers_list))]
+    kb = InlineKeyboardMarkup(inline_keyboard=[buttons])
+    await callback.message.answer(question_text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
 
 @dp.callback_query(lambda c: c.data.startswith("a"))
@@ -96,11 +102,15 @@ async def answer(callback):
     
     if q_num + 1 < 8:
         nq = QUESTIONS[q_num + 1]
-        buttons = []
-        for idx, ans in enumerate(nq["answers"].keys()):
-            buttons.append([InlineKeyboardButton(text=ans, callback_data=f"a{q_num+1}_{idx}")])
-        kb = InlineKeyboardMarkup(inline_keyboard=buttons)
-        await callback.message.answer(f"<b>Вопрос {q_num + 2}/8</b>\n\n{nq['text']}", reply_markup=kb, parse_mode="HTML")
+        answers_list_next = list(nq["answers"].keys())
+        
+        question_text = f"<b>Вопрос {q_num + 2}/8</b>\n\n{nq['text']}\n\n"
+        for idx, ans in enumerate(answers_list_next):
+            question_text += f"{idx + 1}. {ans}\n\n"
+        
+        buttons = [[InlineKeyboardButton(text=EMOJIS[idx], callback_data=f"a{q_num+1}_{idx}")] for idx in range(len(answers_list_next))]
+        kb = InlineKeyboardMarkup(inline_keyboard=[buttons])
+        await callback.message.answer(question_text, reply_markup=kb, parse_mode="HTML")
     else:
         total = sum(user_state[user_id]["scores"])
         q1, q5, q6, q8 = user_state[user_id]["scores"][0], user_state[user_id]["scores"][4], user_state[user_id]["scores"][5], user_state[user_id]["scores"][7]
