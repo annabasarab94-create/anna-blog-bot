@@ -16,14 +16,19 @@ GOOGLE_SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
 GOOGLE_CREDENTIALS_JSON = os.getenv('GOOGLE_CREDENTIALS_JSON')
 
 worksheet = None
+print("CREDS LENGTH:", len(GOOGLE_CREDENTIALS_JSON) if GOOGLE_CREDENTIALS_JSON else "EMPTY")
+print("SHEET ID:", GOOGLE_SHEET_ID)
 try:
     creds_dict = json.loads(GOOGLE_CREDENTIALS_JSON)
+    print("JSON PARSED OK, keys:", list(creds_dict.keys()))
     creds = Credentials.from_service_account_info(creds_dict, scopes=['https://www.googleapis.com/auth/spreadsheets'])
+    print("CREDENTIALS CREATED OK")
     gc = gspread.authorize(creds)
+    print("AUTHORIZED OK")
     worksheet = gc.open_by_key(GOOGLE_SHEET_ID).sheet1
-    print("GOOGLE SHEETS OK")
+    print("GOOGLE SHEETS OK - WORKSHEET OPENED")
 except Exception as e:
-    print("GOOGLE SHEETS FAILED:", str(e))
+    print("GOOGLE SHEETS FAILED. TYPE:", type(e).__name__, "MESSAGE:", repr(e))
 
 QUESTIONS = [
     {"text": "Если я спрошу вас, что должно измениться в вашем блоге за ближайшие 2–3 месяца, вы сможете ответить конкретно?", "answers": {"Да. Я понимаю, к какому результату веду блог, что для этого нужно делать и какой контент должен к этому привести.": 3, "Примерно. Есть цели и идеи, но чёткого плана, как прийти к ним через контент, нет.": 2, "Не особо. Веду блог скорее по ситуации: появляются идеи, новости или настроение что-то выложить, тогда и публикую.": 1, "Если честно, нет. Сейчас главная задача — хотя бы не забрасывать блог.": 0}},
@@ -120,7 +125,7 @@ async def answer(callback):
                 worksheet.append_row([callback.from_user.id, callback.from_user.first_name or "User", total, res["title"]])
                 print("SAVED TO SHEETS OK")
             except Exception as e:
-                print("SAVE TO SHEETS FAILED:", str(e))
+                print("SAVE TO SHEETS FAILED:", repr(e))
     await callback.answer()
 
 async def health_check(request):
