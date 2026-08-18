@@ -21,8 +21,9 @@ try:
     creds = Credentials.from_service_account_info(creds_dict, scopes=['https://www.googleapis.com/auth/spreadsheets'])
     gc = gspread.authorize(creds)
     worksheet = gc.open_by_key(GOOGLE_SHEET_ID).sheet1
-except:
-    pass
+    print("GOOGLE SHEETS OK")
+except Exception as e:
+    print("GOOGLE SHEETS FAILED:", str(e))
 
 QUESTIONS = [
     {"text": "Если я спрошу вас, что должно измениться в вашем блоге за ближайшие 2–3 месяца, вы сможете ответить конкретно?", "answers": {"Да. Я понимаю, к какому результату веду блог, что для этого нужно делать и какой контент должен к этому привести.": 3, "Примерно. Есть цели и идеи, но чёткого плана, как прийти к ним через контент, нет.": 2, "Не особо. Веду блог скорее по ситуации: появляются идеи, новости или настроение что-то выложить, тогда и публикую.": 1, "Если честно, нет. Сейчас главная задача — хотя бы не забрасывать блог.": 0}},
@@ -113,11 +114,13 @@ async def answer(callback):
         txt = "<b>" + res["title"] + "</b>\n\n" + res["text"]
         kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Написать диагностику", url="https://t.me/anya_basarab?text=ДИАГНОСТИКА")]])
         await callback.message.answer(txt, reply_markup=kb, parse_mode="HTML")
+        print("TRYING TO SAVE TO SHEETS, worksheet is:", worksheet)
         if worksheet:
             try:
                 worksheet.append_row([callback.from_user.id, callback.from_user.first_name or "User", total, res["title"]])
-            except:
-                pass
+                print("SAVED TO SHEETS OK")
+            except Exception as e:
+                print("SAVE TO SHEETS FAILED:", str(e))
     await callback.answer()
 
 async def health_check(request):
