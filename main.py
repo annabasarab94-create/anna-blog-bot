@@ -74,8 +74,11 @@ async def start_test(callback):
     for idx, ans in enumerate(answers_list):
         question_text += f"{idx + 1}. {ans}\n\n"
     
-    buttons = [[InlineKeyboardButton(text=EMOJIS[idx], callback_data=f"a0_{idx}")] for idx in range(len(answers_list))]
-    kb = InlineKeyboardMarkup(inline_keyboard=[buttons])
+    buttons = []
+    for idx in range(len(answers_list)):
+        buttons.append([InlineKeyboardButton(text=EMOJIS[idx], callback_data=f"a0_{idx}")])
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
     await callback.message.answer(question_text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
 
@@ -98,55 +101,4 @@ async def answer(callback):
     ans_text, score = answers_list[ans_idx]
     
     user_state[user_id]["scores"].append(score)
-    await callback.message.edit_text(f"<b>Вопрос {q_num + 1}/8</b>\n\n{q['text']}\n\n✓ Ответ принят", parse_mode="HTML", reply_markup=None)
-    
-    if q_num + 1 < 8:
-        nq = QUESTIONS[q_num + 1]
-        answers_list_next = list(nq["answers"].keys())
-        
-        question_text = f"<b>Вопрос {q_num + 2}/8</b>\n\n{nq['text']}\n\n"
-        for idx, ans in enumerate(answers_list_next):
-            question_text += f"{idx + 1}. {ans}\n\n"
-        
-        buttons = [[InlineKeyboardButton(text=EMOJIS[idx], callback_data=f"a{q_num+1}_{idx}")] for idx in range(len(answers_list_next))]
-        kb = InlineKeyboardMarkup(inline_keyboard=[buttons])
-        await callback.message.answer(question_text, reply_markup=kb, parse_mode="HTML")
-    else:
-        total = sum(user_state[user_id]["scores"])
-        q1, q5, q6, q8 = user_state[user_id]["scores"][0], user_state[user_id]["scores"][4], user_state[user_id]["scores"][5], user_state[user_id]["scores"][7]
-        
-        if total >= 19 and q1 >= 2 and q5 >= 2 and q6 >= 2 and q8 >= 2:
-            res = RESULTS[1]
-        elif total >= 13:
-            res = RESULTS[2]
-        elif total >= 7:
-            res = RESULTS[3]
-        else:
-            res = RESULTS[4]
-        
-        txt = f"<b>{res['title']}</b>\n\n{res['text']}"
-        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="📞 Написать диагностику", url="https://t.me/anya_basarab?text=ДИАГНОСТИКА")]])
-        await callback.message.answer(txt, reply_markup=kb, parse_mode="HTML")
-        
-        if worksheet:
-            try:
-                worksheet.append_row([callback.from_user.id, callback.from_user.first_name or "User", total, res['title']])
-            except:
-                pass
-    
-    await callback.answer()
-
-async def health_check(request):
-    return web.Response(text="OK")
-
-async def main():
-    app = web.Application()
-    app.router.add_get('/', health_check)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 8000)
-    await site.start()
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    await callback.message.edit_text(f"<b>Вопрос {q_num +
