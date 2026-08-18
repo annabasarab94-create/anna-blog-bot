@@ -36,13 +36,11 @@ QUESTIONS = [
 ]
 
 RESULTS = {
-    1: {"title": "📈 Блог уже работает как система", "text": "У вас уже есть то, чего нет у многих: вы понимаете, зачем ведёте блог, кого хотите привлекать и какой контент должен давать результат.\n\nНо, скорее всего, вы уже упёрлись в другую точку: блог работает, а расти быстрее не получается. Где-то контент не приводит к нужному действию, где-то теряются потенциальные клиенты.\n\n✨ Хорошая новость: вам не нужно перестраивать всё с нуля. Здесь задача уже другая — найти слабые места, убрать лишнее и масштабировать то, что действительно приносит результат.\n\nНапишите мне ДИАГНОСТИКА @anya_basarab"},
-    2: {"title": "🔄 Блог работает, но слишком многое держится на вас", "text": "У вас уже есть понимание, что блог должен приводить клиентов. Но слишком многое до сих пор зависит лично от вас.\n\nТемы, идеи, согласования, решения. Пока вы включены, всё движется. Стоит переключиться, и блог начинает тормозить.\n\nВместо того, чтобы помогать вам расти, он становится ещё одной задачей.\n\n✨ Хорошая новость: это можно исправить. Нужно просто выстроить работу так, чтобы блог не зависел от вашего постоянного участия.\n\nНапишите мне ДИАГНОСТИКА @anya_basarab"},
-    3: {"title": "🧩 Контент есть, системы пока нет", "text": "Вы ведёте блог, тратите время на идеи, съёмки, тексты. Иногда что-то хорошо заходит, иногда приходят заявки. Но стабильности в этом нет.\n\nСегодня ролик набрал просмотры, завтра почти никто не увидел. И вы снова садитесь придумывать новый контент, не до конца понимая, что из предыдущего вообще сработало.\n\n✨ Это можно изменить. Контент можно выстроить так, чтобы у вас была понятная стратегия, темы не приходилось каждый раз высасывать из пальца, а результаты прошлых публикаций подсказывали, что делать дальше.\n\nНапишите мне ДИАГНОСТИКА @anya_basarab"},
-    4: {"title": "😵‍💫 Блог забирает больше, чем даёт", "text": "Сейчас блог, скорее всего, ощущается как ещё одна работа поверх основной работы.\n\nНужно придумать тему, снять, написать, выложить, не пропасть из сторис, посмотреть охваты. И всё это постоянно висит в голове. При этом клиентов из блога либо мало, либо они приходят настолько нестабильно, что сложно понять, зачем вы вообще тратите на это столько сил.\n\n✨ Это можно изменить. Блог можно выстроить так, чтобы вы понимали, что публиковать, зачем это делать и как контент должен приводить к заявкам, а не просто занимать ещё несколько часов вашей недели.\n\nНапишите мне ДИАГНОСТИКА @anya_basarab"}
+    1: {"title": "📈 Блог уже работает как система", "text": "У вас уже есть то, чего нет у многих: вы понимаете, зачем ведёте блог, кого хотите привлекать и какой контент должен давать результат.\n\nНо вы упёрлись в другую точку: блог работает, а расти не получается. Контент не приводит клиентов, где-то теряются возможности.\n\n✨ Вам не нужно перестраивать всё. Найти слабые места и масштабировать то, что работает.\n\nНапишите мне ДИАГНОСТИКА @anya_basarab"},
+    2: {"title": "🔄 Блог работает, но слишком многое держится на вас", "text": "Вы понимаете, что блог должен приводить клиентов. Но слишком многое зависит лично от вас.\n\nТемы, идеи, решения. Пока вы включены — всё движется. Отвлеклись — блог тормозит.\n\n✨ Это можно исправить. Выстроить работу так, чтобы блог не зависел от вашего участия.\n\nНапишите мне ДИАГНОСТИКА @anya_basarab"},
+    3: {"title": "🧩 Контент есть, системы пока нет", "text": "Вы ведёте блог, тратите время. Иногда что-то заходит, иногда нет. Стабильности нет.\n\nСегодня просмотры, завтра тишина. Вы снова придумываете контент, не понимая, что сработало.\n\n✨ Контент можно выстроить так, чтобы была система и результаты подсказывали, что делать.\n\nНапишите мне ДИАГНОСТИКА @anya_basarab"},
+    4: {"title": "😵‍💫 Блог забирает больше, чем даёт", "text": "Блог ощущается как ещё одна работа. Придумать, снять, написать, выложить.\n\nВсё висит в голове. Клиентов либо мало, либо приходят нестабильно.\n\n✨ Блог можно выстроить так, чтобы вы понимали, что публиковать и как контент приводит к заявкам.\n\nНапишите мне ДИАГНОСТИКА @anya_basarab"}
 }
-
-EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -56,8 +54,7 @@ async def start(message: types.Message):
 async def test(message: types.Message):
     user_id = message.from_user.id
     user_state[user_id] = {"scores": [], "q": 0}
-    
-    txt = "Насколько ваш блог действительно работает на вас?\n\nЗа 8 вопросов вы поймёте, почему блог даёт именно такой результат сейчас и где теряются клиенты, время и силы.\n\nТест покажет:\n🔎 есть ли у вас понятная система\n📈 что уже работает и что можно усилить\n🧩 где именно блог проседает\n\nПриступим?"
+    txt = "Насколько ваш блог действительно работает на вас?\n\nЗа 8 вопросов вы поймёте результат и где теряются клиенты.\n\nПриступим?"
     kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="👍 Да!", callback_data="start"), InlineKeyboardButton(text="🚀 Поехали!", callback_data="start")]])
     await message.answer(txt, reply_markup=kb)
 
@@ -66,20 +63,14 @@ async def start_test(callback):
     user_id = callback.from_user.id
     if user_id not in user_state:
         return
-    
     q = QUESTIONS[0]
-    answers_list = list(q["answers"].keys())
-    
-    question_text = f"<b>Вопрос 1/8</b>\n\n{q['text']}\n\n"
-    for idx, ans in enumerate(answers_list):
-        question_text += f"{idx + 1}. {ans}\n\n"
-    
-    buttons = []
-    for idx in range(len(answers_list)):
-        buttons.append([InlineKeyboardButton(text=EMOJIS[idx], callback_data=f"a0_{idx}")])
-    
+    ans_list = list(q["answers"].keys())
+    txt = "Вопрос 1/8\n\n" + q["text"] + "\n\n"
+    for i, a in enumerate(ans_list):
+        txt += str(i+1) + ". " + a + "\n\n"
+    buttons = [[InlineKeyboardButton(text=str(i+1)+"️⃣", callback_data=f"a0_{i}")] for i in range(len(ans_list))]
     kb = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await callback.message.answer(question_text, reply_markup=kb, parse_mode="HTML")
+    await callback.message.answer(txt, reply_markup=kb)
     await callback.answer()
 
 @dp.callback_query(lambda c: c.data.startswith("a"))
@@ -87,18 +78,58 @@ async def answer(callback):
     user_id = callback.from_user.id
     if user_id not in user_state:
         return
-    
     parts = callback.data.split("_")
     q_num = int(parts[0][1:])
     ans_idx = int(parts[1])
-    
     if q_num < len(user_state[user_id]["scores"]):
         await callback.answer("Ответ уже принят")
         return
-    
     q = QUESTIONS[q_num]
-    answers_list = list(q["answers"].items())
-    ans_text, score = answers_list[ans_idx]
-    
+    ans_items = list(q["answers"].items())
+    ans_text, score = ans_items[ans_idx]
     user_state[user_id]["scores"].append(score)
-    await callback.message.edit_text(f"<b>Вопрос {q_num +
+    await callback.message.edit_text("Вопрос "+str(q_num+1)+"/8\n\n"+q["text"]+"\n\n✓", reply_markup=None)
+    if q_num + 1 < 8:
+        nq = QUESTIONS[q_num+1]
+        ans_list = list(nq["answers"].keys())
+        txt = "Вопрос "+str(q_num+2)+"/8\n\n" + nq["text"] + "\n\n"
+        for i, a in enumerate(ans_list):
+            txt += str(i+1) + ". " + a + "\n\n"
+        buttons = [[InlineKeyboardButton(text=str(i+1)+"️⃣", callback_data=f"a{q_num+1}_{i}")] for i in range(len(ans_list))]
+        kb = InlineKeyboardMarkup(inline_keyboard=buttons)
+        await callback.message.answer(txt, reply_markup=kb)
+    else:
+        total = sum(user_state[user_id]["scores"])
+        q1, q5, q6, q8 = user_state[user_id]["scores"][0], user_state[user_id]["scores"][4], user_state[user_id]["scores"][5], user_state[user_id]["scores"][7]
+        if total >= 19 and q1 >= 2 and q5 >= 2 and q6 >= 2 and q8 >= 2:
+            res = RESULTS[1]
+        elif total >= 13:
+            res = RESULTS[2]
+        elif total >= 7:
+            res = RESULTS[3]
+        else:
+            res = RESULTS[4]
+        txt = res["title"] + "\n\n" + res["text"]
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Написать диагностику", url="https://t.me/anya_basarab?text=ДИАГНОСТИКА")]])
+        await callback.message.answer(txt, reply_markup=kb)
+        if worksheet:
+            try:
+                worksheet.append_row([callback.from_user.id, callback.from_user.first_name or "User", total, res["title"]])
+            except:
+                pass
+    await callback.answer()
+
+async def health_check(request):
+    return web.Response(text="OK")
+
+async def main():
+    app = web.Application()
+    app.router.add_get('/', health_check)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 8000)
+    await site.start()
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
